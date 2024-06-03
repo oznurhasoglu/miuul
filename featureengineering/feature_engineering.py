@@ -880,8 +880,8 @@ df.groupby("NEW_NAME_DR").agg({"Survived": ["mean","count"]})
 
 df.head()
 
+# isim değişkenindeki unvanları alıyoruz. başında boşluk sonunda nokta olan a-z içeren kelimeler olarak ifade ettik.
 df['NEW_TITLE'] = df.Name.str.extract(' ([A-Za-z]+)\.', expand=False)
-
 
 df[["NEW_TITLE", "Survived", "Age"]].groupby(["NEW_TITLE"]).agg({"Survived": "mean", "Age": ["count", "mean"]})
 
@@ -893,7 +893,7 @@ dff = pd.read_csv("datasets/course_reviews.csv")
 dff.head()
 dff.info()
 
-dff['Timestamp'] = pd.to_datetime(dff["Timestamp"], format="%Y-%m-%d")
+dff['Timestamp'] = pd.to_datetime(dff["Timestamp"])
 
 # year
 dff['year'] = dff['Timestamp'].dt.year
@@ -907,13 +907,10 @@ dff['year_diff'] = date.today().year - dff['Timestamp'].dt.year
 # month diff (iki tarih arasındaki ay farkı): yıl farkı + ay farkı
 dff['month_diff'] = (date.today().year - dff['Timestamp'].dt.year) * 12 + date.today().month - dff['Timestamp'].dt.month
 
-
 # day name
 dff['day_name'] = dff['Timestamp'].dt.day_name()
 
 dff.head()
-
-# date
 
 
 #############################################
@@ -1141,5 +1138,3 @@ def plot_importance(model, features, num=len(X), save=False):
 
 
 plot_importance(rf_model, X_train)
-
-
