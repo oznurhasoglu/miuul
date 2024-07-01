@@ -42,7 +42,7 @@ import seaborn as sns
 
 from sklearn.preprocessing import RobustScaler
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix, classification_report, plot_roc_curve
+from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix, classification_report, RocCurveDisplay
 from sklearn.model_selection import train_test_split, cross_validate
 
 def outlier_thresholds(dataframe, col_name, q1=0.05, q3=0.95):
@@ -95,32 +95,22 @@ plt.show()
 
 df.head()
 
-df["BloodPressure"].hist(bins=20)
-plt.xlabel("BloodPressure")
-plt.show()
-
+# sayısal değişkenleri görselleştirme hist graf.
 def plot_numerical_col(dataframe, numerical_col):
     dataframe[numerical_col].hist(bins=20)
     plt.xlabel(numerical_col)
-    plt.show(block=True)
+    plt.show(block=True) #grafikler üst üste binmesin diye
 
+cols = [col for col in df.columns if "Outcome" not in col] #outcome dışında diğerlerini alıyoruz
 
-for col in df.columns:
+for col in cols:
     plot_numerical_col(df, col)
-
-cols = [col for col in df.columns if "Outcome" not in col]
-
-
-# for col in cols:
-#     plot_numerical_col(df, col)
-
-df.describe().T
 
 ##########################
 # Target vs Features
 ##########################
 
-df.groupby("Outcome").agg({"Pregnancies": "mean"})
+# bağımsız değişkenlerle bağımlı değişkeninin ilişkisini inceliyoruz:
 
 def target_summary_with_num(dataframe, target, numerical_col):
     print(dataframe.groupby(target).agg({numerical_col: "mean"}), end="\n\n\n")
@@ -133,18 +123,17 @@ for col in cols:
 ######################################################
 # Data Preprocessing (Veri Ön İşleme)
 ######################################################
-df.shape
-df.head()
 
-df.isnull().sum()
+df.isnull().sum() # null değer yok görünüyor
 
-df.describe().T
+df.describe().T # ama veriyi incelediğimde null değereri 0 ile doldurduklarını görebiliyorum. yine de dokunmuyoruz.
 
 for col in cols:
-    print(col, check_outlier(df, col))
+    print(col, check_outlier(df, col)) #yalnızca insulinde var.
 
 replace_with_thresholds(df, "Insulin")
 
+# scale işlemi yapalım.
 for col in cols:
     df[col] = RobustScaler().fit_transform(df[[col]])
 
@@ -156,7 +145,6 @@ df.head()
 ######################################################
 
 y = df["Outcome"]
-
 X = df.drop(["Outcome"], axis=1)
 
 log_model = LogisticRegression().fit(X, y)
@@ -167,56 +155,7 @@ log_model.coef_
 y_pred = log_model.predict(X)
 
 y_pred[0:10]
-
 y[0:10]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-######################################################
-# Model & Prediction
-######################################################
-
-y = df["Outcome"]
-
-X = df.drop(["Outcome"], axis=1)
-
-log_model = LogisticRegression().fit(X, y)
-log_model.intercept_
-log_model.coef_
-
-y_pred = log_model.predict(X)
-y_pred[0:10]
-
-y[0:10]
-
-
-
-
-
-
 
 
 ######################################################

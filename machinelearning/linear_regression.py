@@ -191,45 +191,46 @@ np.mean(np.sqrt(-cross_val_score(reg_model,
                                  scoring="neg_mean_squared_error")))
 # 1.71
 
-# cv' nin kaçkatlı olacağına veri setinin boyutuna göre karar verebilirsin.
+# cv' nin kaç katlı olacağına veri setinin boyutuna göre karar verebilirsin.
 
 
+# kendimiz yazalım modeli baştan pekiştirme amaçlı
 ######################################################
 # Simple Linear Regression with Gradient Descent from Scratch
 ######################################################
 
 # Cost function MSE
 def cost_function(Y, b, w, X):
-    m = len(Y)
-    sse = 0
+    m = len(Y) # gözlem sayısını tutuyoruz
+    sse = 0 # hata kareleri toplamı
 
-    for i in range(0, m):
-        y_hat = b + w * X[i]
-        y = Y[i]
-        sse += (y_hat - y) ** 2
+    for i in range(0, m): # tüm gözlem birimlerinde gez
+        y_hat = b + w * X.iloc[i] # bağımsız değişkenin y değerini tahmin ediyoruz/hesaplıyoruz.
+        y = Y.iloc[i] # gerçek y değerine bakıyoruz
+        sse += (y_hat - y) ** 2 # sse toplamına hatanın karesini ekliyoruz
 
-    mse = sse / m
+    mse = sse / m # hataların kareleri toplamının ortalamasını alarak mse değerini buluyoruz.
     return mse
 
 
-# update_weights
+# update_weights tek iterasyonluk fonksiyon. tek bir ağırlık çifti için (b,w)
 def update_weights(Y, b, w, X, learning_rate):
     m = len(Y)
-    b_deriv_sum = 0
+    b_deriv_sum = 0 # hesaplayacağım türevler toplamını tutmak için
     w_deriv_sum = 0
     for i in range(0, m):
-        y_hat = b + w * X[i]
-        y = Y[i]
-        b_deriv_sum += (y_hat - y)
-        w_deriv_sum += (y_hat - y) * X[i]
-    new_b = b - (learning_rate * 1 / m * b_deriv_sum)
+        y_hat = b + w * X.iloc[i]
+        y = Y.iloc[i]
+        b_deriv_sum += (y_hat - y) # formüle göre kısmi türevi hesaplıyoruz hem b hem w için.
+        w_deriv_sum += (y_hat - y) * X.iloc[i] # her gözlem için çıkan türevleri topluyoruz. en son ortalamasını alacağız.
+    new_b = b - (learning_rate * 1 / m * b_deriv_sum) # eski değerden türevlerin ortalamasının lr içe çarpımı kadar inerek yeni değeri buluyoruz.
     new_w = w - (learning_rate * 1 / m * w_deriv_sum)
     return new_b, new_w
 
 
-# train fonksiyonu
+# train fonksiyonu: üstteki fonksiyonlarımızı belirli bir iterasyonda kullanarak train etme işlemi
 def train(Y, initial_b, initial_w, X, learning_rate, num_iters):
-
+    # ilk ağırlık değerleriyle GD sonucu mse değerimi yazdırıyorum ki sonradan karşılaştırma yapabileyim.
     print("Starting gradient descent at b = {0}, w = {1}, mse = {2}".format(initial_b, initial_w,
                                                                    cost_function(Y, initial_b, initial_w, X)))
 
@@ -237,12 +238,12 @@ def train(Y, initial_b, initial_w, X, learning_rate, num_iters):
     w = initial_w
     cost_history = []
 
-    for i in range(num_iters):
+    for i in range(num_iters): # her iterasyon için ağırlıkları güncelleyip cost hesaplıyor ve cost historye ekliyorum.
         b, w = update_weights(Y, b, w, X, learning_rate)
         mse = cost_function(Y, b, w, X)
         cost_history.append(mse)
 
-
+        # 100 iterasyonda bir raporlama yap.
         if i % 100 == 0:
             print("iter={:d}    b={:.2f}    w={:.4f}    mse={:.4}".format(i, b, w, mse))
 
@@ -250,26 +251,17 @@ def train(Y, initial_b, initial_w, X, learning_rate, num_iters):
     print("After {0} iterations b = {1}, w = {2}, mse = {3}".format(num_iters, b, w, cost_function(Y, b, w, X)))
     return cost_history, b, w
 
-
+# şimdi bunları kullanalım.
 df = pd.read_csv("datasets/advertising.csv")
 
 X = df["radio"]
 Y = df["sales"]
 
-# hyperparameters
+# hyperparameters örnek olarak verdik
 learning_rate = 0.001
 initial_b = 0.001
 initial_w = 0.001
 num_iters = 100000
 
 cost_history, b, w = train(Y, initial_b, initial_w, X, learning_rate, num_iters)
-
-
-
-
-
-
-
-
-
-
+#16000. iterasyondan sonra hata düşmüyor sabit kalıyor.
