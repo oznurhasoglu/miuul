@@ -37,8 +37,10 @@ df["Outcome"].value_counts()
 y = df["Outcome"]
 X = df.drop(["Outcome"], axis=1)
 
+#uzaklık temelli bir yöntem olduğu için standartlaştırma yapıyoruz.
 X_scaled = StandardScaler().fit_transform(X)
 
+# x_scaled np arraytipinde ve sütun isimlerini taşımıyor, sütunları ekliyoruz ve dataframe olarak kaydediyoruz.
 X = pd.DataFrame(X_scaled, columns=X.columns)
 
 ################################################
@@ -59,7 +61,7 @@ knn_model.predict(random_user)
 y_pred = knn_model.predict(X)
 
 # AUC için y_prob:
-y_prob = knn_model.predict_proba(X)[:, 1]
+y_prob = knn_model.predict_proba(X)[:, 1] # bağımsız değişkenlerin 1 sınıfına ait olma olasılıkları. bunun üzerinden roc auc hesaplıycaz.
 
 print(classification_report(y, y_pred))
 # acc 0.83
@@ -68,24 +70,20 @@ print(classification_report(y, y_pred))
 roc_auc_score(y, y_prob)
 # 0.90
 
+# cross_val_score() metodunda tek metriğe göre değerlendirilir. cross_validate() birden çok metriğe göre değerlendirme yapabilir.
 cv_results = cross_validate(knn_model, X, y, cv=5, scoring=["accuracy", "f1", "roc_auc"])
 
-cv_results['test_accuracy'].mean()
-cv_results['test_f1'].mean()
-cv_results['test_roc_auc'].mean()
+cv_results['test_accuracy'].mean() # 0.73
+cv_results['test_f1'].mean() # 0.59
+cv_results['test_roc_auc'].mean() # 0.78
 
-
-# 0.73
-# 0.59
-# 0.78
-
+# Başarıyı arttırmak için aşağıdakiler yapılabilir:
 # 1. Örnek boyutu arttıralabilir.
 # 2. Veri ön işleme
 # 3. Özellik mühendisliği
 # 4. İlgili algoritma için optimizasyonlar yapılabilir.
 
-knn_model.get_params()
-
+# hiperparametrelerine bakalım
 ################################################
 # 5. Hyperparameter Optimization
 ################################################
@@ -93,20 +91,27 @@ knn_model.get_params()
 knn_model = KNeighborsClassifier()
 knn_model.get_params()
 
+#default değeri 5 olan komşuluk sayısı parametresini 2 ile 50 arasında değerler alsın hepsi de denensin istiyorum.
+#bu işlemi grid search algoritması ile yapabilirim
+
 knn_params = {"n_neighbors": range(2, 50)}
 
+# hiperparametre optimizasyonu yaparen de cross val kullanılır. cv
 knn_gs_best = GridSearchCV(knn_model,
                            knn_params,
                            cv=5,
-                           n_jobs=-1,
-                           verbose=1).fit(X, y)
+                           n_jobs=-1, # işlemciyi tam performansla kullanır -1 olunca
+                           verbose=1).fit(X, y) # verbose yapılan işlem için rapor istiyor musun diye sorar
 
+# en iyi parametreler neymiş diye bakıyorum. 17 imiş.
 knn_gs_best.best_params_
 
 ################################################
 # 6. Final Model
 ################################################
 
+# grid search sonucu elde ettiğim parametreleri tek tek yazmak yerine
+# set_params metoduyla grid search çıktımı başına ** koyarak yazdığımda değişkenleri oraya atar.
 knn_final = knn_model.set_params(**knn_gs_best.best_params_).fit(X, y)
 
 cv_results = cross_validate(knn_final,
@@ -115,21 +120,12 @@ cv_results = cross_validate(knn_final,
                             cv=5,
                             scoring=["accuracy", "f1", "roc_auc"])
 
-cv_results['test_accuracy'].mean()
-cv_results['test_f1'].mean()
-cv_results['test_roc_auc'].mean()
+cv_results['test_accuracy'].mean() #76
+cv_results['test_f1'].mean() #61
+cv_results['test_roc_auc'].mean() #81
+# sonuçlarımız iyileşti
 
+# bir tahmin yapalım
 random_user = X.sample(1)
 
 knn_final.predict(random_user)
-
-
-
-
-
-
-
-
-
-
-
