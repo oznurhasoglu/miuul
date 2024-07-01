@@ -162,6 +162,7 @@ y[0:10]
 # Model Evaluation
 ######################################################
 
+# confusion matrix oluşturuyoruz
 def plot_confusion_matrix(y, y_pred):
     acc = round(accuracy_score(y, y_pred), 2)
     cm = confusion_matrix(y, y_pred)
@@ -173,6 +174,7 @@ def plot_confusion_matrix(y, y_pred):
 
 plot_confusion_matrix(y, y_pred)
 
+# başarı metriklerini bir arada görebileceğim classification report
 print(classification_report(y, y_pred))
 
 
@@ -186,7 +188,7 @@ y_prob = log_model.predict_proba(X)[:, 1]
 roc_auc_score(y, y_prob)
 # 0.83939
 
-
+# buraya kadar modeli eğittiğim veri (X) üzerinde test ettim. Modeli doğrulamaya ihtiyacım var.
 ######################################################
 # Model Validation: Holdout
 ######################################################
@@ -206,18 +208,19 @@ print(classification_report(y_test, y_pred))
 # Precision: 0.74
 # Recall: 0.58
 # F1-score: 0.65
-
+# üstte eğitim setindeki değerler altta test setindeki değerler
 # Accuracy: 0.77
 # Precision: 0.79
 # Recall: 0.53
 # F1-score: 0.63
 
-plot_roc_curve(log_model, X_test, y_test)
+# roc eğrisini çizdir
+RocCurveDisplay.from_estimator(log_model, X_test, y_test)
 plt.title('ROC Curve')
 plt.plot([0, 1], [0, 1], 'r--')
-plt.show()
+plt.show(block=True)
 
-# AUC
+# AUC hesapla
 roc_auc_score(y_test, y_prob)
 
 
@@ -228,6 +231,8 @@ roc_auc_score(y_test, y_prob)
 y = df["Outcome"]
 X = df.drop(["Outcome"], axis=1)
 
+# veri seti küçükse tüm veri setine cross val uygulayabilirsin.
+# büyükse ve istersen önce holdout yöntemini kullanır train-test böler sonra sadece traine cross val uygularsın.
 log_model = LogisticRegression().fit(X, y)
 
 cv_results = cross_validate(log_model,
@@ -235,19 +240,19 @@ cv_results = cross_validate(log_model,
                             cv=5,
                             scoring=["accuracy", "precision", "recall", "f1", "roc_auc"])
 
-
-
+# ilk (eğitim seti)
 # Accuracy: 0.78
 # Precision: 0.74
 # Recall: 0.58
 # F1-score: 0.65
 
+# ikinci (holdout)
 # Accuracy: 0.77
 # Precision: 0.79
 # Recall: 0.53
 # F1-score: 0.63
 
-
+# üçüncü (cv)
 cv_results['test_accuracy'].mean()
 # Accuracy: 0.7721
 
@@ -269,22 +274,10 @@ cv_results['test_roc_auc'].mean()
 
 X.columns
 
+# rastgele bir gözlem seçelim
 random_user = X.sample(1, random_state=45)
+
+# bu gözlemdeki kişi için tahmin yapalım
 log_model.predict(random_user)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
