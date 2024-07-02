@@ -357,27 +357,14 @@ predict_with_rules(x) #1
 # 12. Saving and Loading Model
 ################################################
 
+#modeli kaydettik
 joblib.dump(cart_final, "cart_final.pkl")
 
+#modeli kaydettiğimiz yerden yükledik kullanmak için
 cart_model_from_disc = joblib.load("cart_final.pkl")
 
+#kullanalım. verimizi modele verdik. veriyi dataframe olarak alır. dataframe'e çevirip transpozunu alarak modele verdik ve tahmin etti.
 x = [12, 13, 20, 23, 4, 55, 12, 7]
-
-cart_model_from_disc.predict(pd.DataFrame(x).T)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+cart_model_from_disc.predict(pd.DataFrame(x).T) #1
 
 
