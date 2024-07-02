@@ -62,13 +62,13 @@ cart_model = DecisionTreeClassifier(random_state=1).fit(X, y)
 y_pred = cart_model.predict(X)
 
 # AUC için y_prob:
-y_prob = cart_model.predict_proba(X)[:, 1]
+y_prob = cart_model.predict_proba(X)[:, 1] # roc eğrisi için 1. sınıfa ait olma olasılığı hesapladık.
 
 # Confusion matrix
-print(classification_report(y, y_pred))
+print(classification_report(y, y_pred)) # başarı hepsinde 1 çıktı. overfit oldu yani
 
 # AUC
-roc_auc_score(y, y_prob)
+roc_auc_score(y, y_prob) # başarı hepsinde 1 çıktı. overfit oldu yani
 
 #####################
 # Holdout Yöntemi ile Başarı Değerlendirme
@@ -78,24 +78,29 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random
 
 cart_model = DecisionTreeClassifier(random_state=17).fit(X_train, y_train)
 
-# Train Hatası
+# Train Hatası hepsi 1 çıktı yani overfit
 y_pred = cart_model.predict(X_train)
 y_prob = cart_model.predict_proba(X_train)[:, 1]
 print(classification_report(y_train, y_pred))
 roc_auc_score(y_train, y_prob)
 
-# Test Hatası
+# Test Hatası değerlerin düştüğünü görüyoruz. gerçek başarı metriğimiz bu.
 y_pred = cart_model.predict(X_test)
 y_prob = cart_model.predict_proba(X_test)[:, 1]
 print(classification_report(y_test, y_pred))
 roc_auc_score(y_test, y_prob)
 
+#yani modelin overfit olup olmadığını train ve test setindeki hatalarrı arasında çok fark olmasından anlayabiliriz.
+# random_state değiştirdikçe de başarı fazla değişiyor. bu veri setinin küçük olmasından kaynaklı olabilir.
+# o yüzden cross val yapmak mantıklı
+
 #####################
 # CV ile Başarı Değerlendirme
 #####################
 
-cart_model = DecisionTreeClassifier(random_state=17).fit(X, y)
+cart_model = DecisionTreeClassifier(random_state=17)
 
+# cross_val fit işlemini kendi içinde yapıyor.
 cv_results = cross_validate(cart_model,
                             X, y,
                             cv=5,
@@ -113,53 +118,58 @@ cv_results['test_roc_auc'].mean()
 # 4. Hyperparameter Optimization with GridSearchCV
 ################################################
 
-cart_model.get_params()
+cart_model.get_params() #parametrelerine bir bakalım
 
 cart_params = {'max_depth': range(1, 11),
-               "min_samples_split": range(2, 20)}
+               "min_samples_split": range(2, 20)} #bu parametreleri bu aralıklarda denemek ve değiştirmek istedim.
 
 cart_best_grid = GridSearchCV(cart_model,
                               cart_params,
                               cv=5,
                               n_jobs=-1,
                               verbose=1).fit(X, y)
+#GridSearhCV'e istersek 'scoring' parametresi ekler ve hesaplaığı score tipini seçebiliriz. Bu parametreyi kullanmazsak acc hesaplar.
 
-cart_best_grid.best_params_
+cart_best_grid.best_params_ #seçtiği parametre değerlerine bakalım
 
-cart_best_grid.best_score_
+cart_best_grid.best_score_ #hesapladığı scorea bakalım
 
 random = X.sample(1, random_state=45)
 
 cart_best_grid.predict(random)
-
+# görüldüğü üzere direkt gridsearch çıktısı model olarak kullanılabiliyor.
+# ama yine de final model kurmak, bunu kullanmamak daha mantıklı
 
 ################################################
 # 5. Final Model
 ################################################
 
+# bulduğumuz best parametreleri modele veriyoruz. ya bu şekilde modelin ilk kuruluşunda verebiliriz
 cart_final = DecisionTreeClassifier(**cart_best_grid.best_params_, random_state=17).fit(X, y)
-cart_final.get_params()
 
+# ya da modeli önceden kurduysak (cart_model) parametreleri set_params() ile güncelleyebiliriz.
 cart_final = cart_model.set_params(**cart_best_grid.best_params_).fit(X, y)
+cart_model.get_params() #bakalım parametreler güncellenmiş mi
 
+# optimizasyon sonrası değerlerime bakayım
 cv_results = cross_validate(cart_final,
                             X, y,
                             cv=5,
                             scoring=["accuracy", "f1", "roc_auc"])
 
-cv_results['test_accuracy'].mean()
-
-cv_results['test_f1'].mean()
-
-cv_results['test_roc_auc'].mean()
+#hepsi iyileşmiş
+cv_results['test_accuracy'].mean()#0.75
+cv_results['test_f1'].mean() #0.61
+cv_results['test_roc_auc'].mean() #0.79
 
 
 ################################################
 # 6. Feature Importance
 ################################################
-
+# modele hangi değişkenin ne kadar etki ettiğini görselleştirmek istersek
 cart_final.feature_importances_
 
+# num parametresi görmek istediğimiz değişken sayısı, save ise görseli kaydetmek için
 def plot_importance(model, features, num=len(X), save=False):
     feature_imp = pd.DataFrame({'Value': model.feature_importances_, 'Feature': features.columns})
     plt.figure(figsize=(10, 10))
@@ -173,29 +183,27 @@ def plot_importance(model, features, num=len(X), save=False):
         plt.savefig('importances.png')
 
 
-plot_importance(cart_final, X, num=5)
+plot_importance(cart_final, X)
 
 ################################################
 # 7. Analyzing Model Complexity with Learning Curves (BONUS)
 ################################################
 
-
+#Leearning curve oluşturmak için train score, test score gözlemlemek istediğimiz bir parametreye göre gösterilir.
 train_score, test_score = validation_curve(cart_final, X, y,
                                            param_name="max_depth",
                                            param_range=range(1, 11),
                                            scoring="roc_auc",
                                            cv=10)
 
-mean_train_score = np.mean(train_score, axis=1)
+mean_train_score = np.mean(train_score, axis=1) #10 katlı cv yaptığımız için parametrenin her değeri için 10 tane değer vardır, onların ortalamasını alıyoruz.
 mean_test_score = np.mean(test_score, axis=1)
 
-
+#daha sonra bunları görselleştiriyoruz.
 plt.plot(range(1, 11), mean_train_score,
          label="Training Score", color='b')
-
 plt.plot(range(1, 11), mean_test_score,
          label="Validation Score", color='g')
-
 plt.title("Validation Curve for CART")
 plt.xlabel("Number of max_depth")
 plt.ylabel("AUC")
