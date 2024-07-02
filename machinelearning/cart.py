@@ -20,6 +20,7 @@
 # pip install skompiler
 # pip install astor
 # pip install joblib
+#conda install graphviz
 
 import warnings
 import joblib
@@ -213,7 +214,7 @@ plt.show()
 
 
 
-
+# Tüm Bu Learning Curve İşlemlerini Fonksiyonlaştıralım.
 def val_curve_params(model, X, y, param_name, param_range, scoring="roc_auc", cv=10):
     train_score, test_score = validation_curve(
         model, X=X, y=y, param_name=param_name, param_range=param_range, scoring=scoring, cv=cv)
@@ -227,16 +228,16 @@ def val_curve_params(model, X, y, param_name, param_range, scoring="roc_auc", cv
     plt.plot(param_range, mean_test_score,
              label="Validation Score", color='g')
 
-    plt.title(f"Validation Curve for {type(model).__name__}")
+    plt.title(f"Validation Curve for {type(model).__name__}") #girilen modelin tipine bakıp ismini alıyoruz
     plt.xlabel(f"Number of {param_name}")
     plt.ylabel(f"{scoring}")
     plt.tight_layout()
     plt.legend(loc='best')
     plt.show(block=True)
 
-
 val_curve_params(cart_final, X, y, "max_depth", range(1, 11), scoring="f1")
 
+# birden fazla parametre için bu fonksiyonu çalıştırmak istersek:
 cart_val_params = [["max_depth", range(1, 11)], ["min_samples_split", range(2, 20)]]
 
 for i in range(len(cart_val_params)):
@@ -248,15 +249,12 @@ for i in range(len(cart_val_params)):
 # 8. Visualizing the Decision Tree
 ################################################
 
-# conda install graphviz
-# import graphviz
-
 def tree_graph(model, col_names, file_name):
     tree_str = export_graphviz(model, feature_names=col_names, filled=True, out_file=None)
     graph = pydotplus.graph_from_dot_data(tree_str)
     graph.write_png(file_name)
 
-
+# ağacımızın görselleştirilmiş halini png olarak kaydettik.
 tree_graph(model=cart_final, col_names=X.columns, file_name="cart_final.png")
 
 cart_final.get_params()
@@ -265,7 +263,7 @@ cart_final.get_params()
 ################################################
 # 9. Extracting Decision Rules
 ################################################
-
+# ağacın hangi kurallara göre karar aldığını yazdırıyoruz
 tree_rules = export_text(cart_final, feature_names=list(X.columns))
 print(tree_rules)
 
@@ -273,9 +271,9 @@ print(tree_rules)
 ################################################
 # 10. Extracting Python Codes of Decision Rules
 ################################################
-
-# sklearn '0.23.1' versiyonu ile yapılabilir.
-# pip install scikit-learn==0.23.1
+# bu modelin oluşturduğu kuralları bir python kodu, sql komutu veya excel kodu olarak elde edebiliriz.
+# bunları yapmak bize modeli canlıya alırken direkt sunucu/veri tabanı boyutunda, veri ssitemden çıkmadan işlem yapmamıza olanak tanır.
+# bu iyi bir şey. veriyi alıp modele vermektense veriyi basit bir sql kodu veya python koduyla işlemek daha basic bir işlem.
 
 print(skompile(cart_final.predict).to('python/code'))
 
@@ -288,6 +286,7 @@ print(skompile(cart_final.predict).to('excel'))
 # 11. Prediction using Python Codes
 ################################################
 
+# gelen yeni verileri python kodumuza vererek tahminleme yapabiliriz.
 def predict_with_rules(x):
     return ((((((0 if x[6] <= 0.671999990940094 else 1 if x[6] <= 0.6864999830722809 else
         0) if x[0] <= 7.5 else 1) if x[5] <= 30.949999809265137 else ((1 if x[5
@@ -344,15 +343,14 @@ def predict_with_rules(x):
         ) if x[4] <= 629.5 else 1 if x[6] <= 0.4124999940395355 else 0)
 
 X.columns
-
+# değişken değerleri aşağıdaki gibi olan bir veri olsun. tahmin yapalım.
 x = [12, 13, 20, 23, 4, 55, 12, 7]
 
-predict_with_rules(x)
+predict_with_rules(x) #0
 
 x = [6, 148, 70, 35, 0, 30, 0.62, 50]
 
-predict_with_rules(x)
-
+predict_with_rules(x) #1
 
 
 ################################################
