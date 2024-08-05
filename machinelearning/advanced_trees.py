@@ -33,32 +33,40 @@ X = df.drop(["Outcome"], axis=1)
 ################################################
 
 rf_model = RandomForestClassifier(random_state=17)
-rf_model.get_params()
+rf_model.get_params() #alabileceği tüm parametreleri görelim
 
+#n_estimtors= fit edilecek ağaç sayısı
+
+# hiperparametre optimizasyonu yapmadan default değerlerle verdiği sonuçlara bir bakalım.
 cv_results = cross_validate(rf_model, X, y, cv=10, scoring=["accuracy", "f1", "roc_auc"])
-cv_results['test_accuracy'].mean()
-cv_results['test_f1'].mean()
-cv_results['test_roc_auc'].mean()
+cv_results['test_accuracy'].mean() #0.753
+cv_results['test_f1'].mean() #0.619
+cv_results['test_roc_auc'].mean() #0.823
 
-
+# hiperparametre optimizasyonu için gridsearch kullanacağız. bu yüzden parametrelere denenecek farklı değerleri seçelim.
+# bu değerler içinde default değeri de olmalı ve onun çevresindeki değerlerden seçilmeli
 rf_params = {"max_depth": [5, 8, None],
              "max_features": [3, 5, 7, "auto"],
              "min_samples_split": [2, 5, 8, 15, 20],
              "n_estimators": [100, 200, 500]}
 
-
+#gridsearch çalıştırıyoruz. toplam 180 parametre kombinasyonunu deneyecek.
 rf_best_grid = GridSearchCV(rf_model, rf_params, cv=5, n_jobs=-1, verbose=True).fit(X, y)
 
+#en iyi sonucu veren kombinasyondaki parametreleri getirtiyoruz.
 rf_best_grid.best_params_
 
+# parametre optimizasyonu sonucu elde ettiğim yeni par. değerşleriyle fnal modeli oluşturuyorum.
 rf_final = rf_model.set_params(**rf_best_grid.best_params_, random_state=17).fit(X, y)
 
+#sonuçları karşılaşıralım.
 cv_results = cross_validate(rf_final, X, y, cv=10, scoring=["accuracy", "f1", "roc_auc"])
-cv_results['test_accuracy'].mean()
-cv_results['test_f1'].mean()
-cv_results['test_roc_auc'].mean()
+cv_results['test_accuracy'].mean() #0.766 iyileşti
+cv_results['test_f1'].mean() #0.644 iyileşti
+cv_results['test_roc_auc'].mean() #0.827 çok az iyileşti.
 
 
+# feature importance
 def plot_importance(model, features, num=len(X), save=False):
     feature_imp = pd.DataFrame({'Value': model.feature_importances_, 'Feature': features.columns})
     plt.figure(figsize=(10, 10))
@@ -73,6 +81,7 @@ def plot_importance(model, features, num=len(X), save=False):
 
 plot_importance(rf_final, X)
 
+#learning curve
 def val_curve_params(model, X, y, param_name, param_range, scoring="roc_auc", cv=10):
     train_score, test_score = validation_curve(
         model, X=X, y=y, param_name=param_name, param_range=param_range, scoring=scoring, cv=cv)
@@ -93,6 +102,7 @@ def val_curve_params(model, X, y, param_name, param_range, scoring="roc_auc", cv
     plt.legend(loc='best')
     plt.show(block=True)
 
+# max_depth parametresini 1-11 aralığında değerler vererek roc_auc scoreuna train ve tes üzerinde bakalım
 val_curve_params(rf_final, X, y, "max_depth", range(1, 11), scoring="roc_auc")
 
 
